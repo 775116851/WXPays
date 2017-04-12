@@ -1,1 +1,63 @@
-﻿@(ViewData["PP"])
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Home</title>
+    <script src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+</head>
+<body>
+    <div>
+        <a onclick="callpay()">测试支付</a><br />
+        <a href="@(Url.Action("Pay","Home"))">支付</a><br />
+        <a href="@(Url.Action("Cancel","Home"))">撤销</a><br />
+        <a href="@(Url.Action("Refund","Home"))">退款</a><br />
+        <a href="@(Url.Action("Query","Home"))">查询</a><br />
+    </div>
+</body>
+</html>
+<script type="text/javascript">
+        //调用微信JS api 支付
+        function jsApiCall()
+        {
+            WeixinJSBridge.invoke(
+             'getBrandWCPayRequest', {
+                 "appId": "wxb3fa424b649563b5",     //公众号名称，由商户传入     
+                 "timeStamp": "1488792366",         //时间戳，自1970年以来的秒数     
+                 "nonceStr": "35060", //随机串     
+                 "package": "prepay_id=wx20170306172605811ff665320246143512",
+                 "signType": "MD5",         //微信签名方式：     
+                 "paySign": "8530969142E89199D9AE19A588CA184A" //微信签名 
+             },
+             function (res)
+             {
+                 WeixinJSBridge.log(res.err_msg);
+                 alert(res.err_code + res.err_desc + res.err_msg);
+             }
+            );
+        }
+
+        function callpay()
+        {
+            if (typeof WeixinJSBridge == "undefined")
+            {
+                if (document.addEventListener)
+                {
+                    document.addEventListener('WeixinJSBridgeReady', jsApiCall, false);
+                }
+                else if (document.attachEvent)
+                {
+                    document.attachEvent('WeixinJSBridgeReady', jsApiCall);
+                    document.attachEvent('onWeixinJSBridgeReady', jsApiCall);
+                }
+            }
+            else
+            {
+                jsApiCall();
+            }
+        }
+    </script>

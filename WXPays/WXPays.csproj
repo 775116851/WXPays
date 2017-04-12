@@ -136,8 +136,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Code\AppConstants.cs" />
+    <Compile Include="Code\AppUtil.cs" />
     <Compile Include="Code\Cryptography.cs" />
+    <Compile Include="Code\HttpUtil.cs" />
+    <Compile Include="Code\SybWxPayService.cs" />
+    <Compile Include="Code\WeChatHelper.cs" />
     <Compile Include="Code\WXBizMsgCrypt.cs" />
+    <Compile Include="Code\WXPayHelper.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -153,6 +159,7 @@
     <Content Include="3rdParty\Microsoft.Practices.EnterpriseLibrary.Common.dll" />
     <Content Include="3rdParty\Microsoft.Practices.EnterpriseLibrary.Logging.dll" />
     <Content Include="3rdParty\Microsoft.Practices.ObjectBuilder.dll" />
+    <Content Include="3rdParty\Newtonsoft.Json.dll" />
     <Content Include="3rdParty\WebMonitor.dll" />
     <Content Include="Global.asax" />
     <Content Include="Web.config" />
@@ -172,7 +179,7 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Home\IndexX.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Configuration\Log.Config" />
@@ -180,7 +187,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\PublishProfiles\WXPays.pubxml" />
-    <Content Include="Views\Home\Test.cshtml" />
+    <Content Include="Views\Home\TestX.cshtml" />
+    <Content Include="Views\Home\Pay.cshtml" />
+    <Content Include="Views\Home\Cancel.cshtml" />
+    <Content Include="Views\Home\Refund.cshtml" />
+    <Content Include="Views\Home\Query.cshtml" />
+    <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Home\TTT.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

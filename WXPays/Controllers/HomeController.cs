@@ -1,4 +1,6 @@
 ﻿using log4net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -6,8 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.Script.Serialization;
 using System.Xml;
 using WXPays.Code;
 
@@ -16,9 +20,207 @@ namespace WXPays.Controllers
     public class HomeController : Controller
     {
         private ILog log = log4net.LogManager.GetLogger(typeof(HomeController));
+        SybWxPayService sybService = new SybWxPayService();
+
+        public ActionResult Index()
+        {
+            //log.Info("回调参数：" + Request.Url.ToString());
+            //GetOpenID();
+            return View();
+        }
+
+        public ActionResult TTT()
+        {
+            log.Info("回调参数：" + Request.Url.ToString());
+            string k = Convert.ToString(Session["fff"]);
+            GetOpenID();
+            //WeChatHelper.GetOpenID("");
+            return View();
+        }
+
+        public ActionResult Pay()
+        {
+            //Session["fff"] = "aaa";
+            //GetOpenID();
+            //return View();
+            try
+            {
+                Dictionary<String, String> rsp = sybService.pay(1, "131332659649680792", "W02", "商品内容", "备注", "oJ9W_jhNs3sm1jxgQyBDNbAlR7ZI", "", "http://baidu.com", "");
+                printRsp(rsp);
+            }
+            catch (Exception ex)
+            {
+                //this.tblank.Value = ex.Message;
+                log.Error("支付异常结果：" + ex.Message);
+            }
+            return View();
+        }
+
+        public ActionResult Cancel()
+        {
+            try
+            {
+                Dictionary<String, String> rsp = sybService.cancel(1, DateTime.Now.ToFileTime().ToString(), "12525075", "");
+                printRsp(rsp);
+            }
+            catch (Exception ex)
+            {
+                //this.tblank.Value = ex.Message;
+                log.Error("撤销异常结果：" + ex.Message);
+            }
+            return View();
+        }
+
+        public ActionResult Refund()
+        {
+            try
+            {
+                Dictionary<String, String> rsp = sybService.refund(1, DateTime.Now.ToFileTime().ToString(), "12525075", "");
+                printRsp(rsp);
+            }
+            catch (Exception ex)
+            {
+                //this.tblank.Value = ex.Message;
+                log.Error("退款异常结果：" + ex.Message);
+            }
+            return View();
+        }
+
+        public ActionResult Query()
+        {
+            try
+            {
+                Dictionary<String, String> rsp = sybService.query("", "17273218");
+                printRsp(rsp);
+            }
+            catch (Exception ex)
+            {
+                //this.tblank.Value = ex.Message;
+                log.Error("查询异常结果：" + ex.Message);
+            }
+            return View();
+        }
+
+        private void doRequest(Dictionary<String, String> param, String url)
+        {
+            String rsp = HttpUtil.CreatePostHttpResponse(AppConstants.API_URL + url, param, Encoding.UTF8);
+            Dictionary<String, String> rspDic = (Dictionary<String, String>)JsonConvert.DeserializeObject(rsp, typeof(Dictionary<String, String>));
+            rsp = "请求返回数据:" + rsp + "\n";
+            if ("SUCCESS".Equals(rspDic["retcode"]))//验签
+            {
+                String signRsp = rspDic["sign"];
+                rspDic.Remove("sign");
+                String sign = AppUtil.signParam(rspDic, AppConstants.APPKEY);
+                if (signRsp.Equals(sign))
+                {
+                    rsp = rsp + "验签成功";
+                }
+                else
+                    rsp = rsp + "验签失败";
+
+            }
+            log.Info("请求结果：" + rsp);
+            //this.tblank.Value = rsp;
+        }
+
+        private void printRsp(Dictionary<String, String> rspDic)
+        {
+            string rsp = "请求返回数据:\n";
+            foreach (var item in rspDic)
+            {
+                rsp += item.Key + "-----" + item.Value + ";\n";
+            }
+            log.Info("请求打印结果：" + rsp);
+            //this.tblank.Value = rsp;
+        }
+
+        #region
+        public string GetOpenID()
+        {
+
+            string WXOpenID = Convert.ToString(Session["WXOpenIDS"]);
+            if (string.IsNullOrEmpty(WXOpenID) || WXOpenID == "StringNull")
+            {
+                log.Info("OpenID为空进入，开始获取Code");
+                WXPayHelper wxph = new WXPayHelper();
+                string code = wxph.GetCode();   //获取code
+                Session["fff"] = "BBB";
+                if (!string.IsNullOrEmpty(code) && code != "StringNull")
+                {
+
+                    log.Info("OpenID为空进入，开始获取AccessToken");
+                    Tuple<int, string, WXUserInfo> result = wxph.AccessToken(code); //获取accessToken
+                    Session["fff"] = "CCC";
+                    switch (result.Item1)
+                    {
+                        case -1://异常
+
+                            break;
+                        case 0://成功
+
+                            Session["WXRefreshToken"] = result.Item3.RefreshToken;
+                            Tuple<int, string, WXUserInfo> reUI = wxph.WXUserInfo(result.Item3.AccessToken, result.Item3.OpenID, result.Item3.RefreshToken);
+                            if (reUI.Item1 == 0)//成功
+                            {
+                                Session["fff"] = "ddd";
+                                //将必要信息同步到数据库会员
+
+                                Session["WXUserInfo"] = result.Item3;
+                                Session["WXOpenIDS"] = result.Item3.OpenID;
+                            }
+                            else
+                            {
+
+                            }
+                            break;
+                        case -2://刷新AccessToken
+                            string refreshtoken = Convert.ToString(Session["WXRefreshToken"]);//数据库读取
+                            if (!string.IsNullOrEmpty(refreshtoken) && refreshtoken != "StringNull")
+                            {
+                                Tuple<int, string, string> reR = wxph.RefreshAccessToken(refreshtoken);
+                                switch (reR.Item1)
+                                {
+                                    case -1://异常
+
+                                        break;
+                                    case 0://成功
+                                        //result = wxph.AccessToken(code);
+                                        //if (result.Item1 == 0)
+                                        //{
+                                        //    Session["WXRefreshToken"] = result.Item3.RefreshToken;
+                                        //}
+                                        //else
+                                        //{
+                                        //}
+                                        break;
+                                    case -2://Refreshtoken过期 重新发起授权
+                                        Session["WXOpenID"] = "";
+                                        wxph.CodeURL();
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                //??
+                            }
+                            break;
+                    }
+
+                }
+            }
+            else
+            {
+                log.Info("OpenID为空进入，存在WXOpenID");
+            }
+            return WXOpenID;
+        }
+        #endregion
+
+
+        #region 网页验证授权(个人公众测试使用)
 
         //网页验证授权(个人公众测试使用)
-        public ActionResult Index()
+        public ActionResult IndexX()
         {
             Response.Clear();
             log.Info("进入方法A");
@@ -104,7 +306,7 @@ namespace WXPays.Controllers
         }
 
         //网页验证授权(个人公众测试使用)
-        public ActionResult Test()
+        public ActionResult TestX()
         {
             string rUrl = ConfigurationManager.AppSettings["TestUrl"];
             var request = (HttpWebRequest)WebRequest.Create(rUrl);
@@ -114,6 +316,9 @@ namespace WXPays.Controllers
             Response.Write(responseString);
             return View();
         }
+
+        #endregion
+        
 
     }
 }
